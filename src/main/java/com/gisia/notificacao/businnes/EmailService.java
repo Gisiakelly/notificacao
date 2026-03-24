@@ -1,6 +1,8 @@
 package com.gisia.notificacao.businnes;
 
 import com.gisia.notificacao.businnes.dto.TarefasDTO;
+import com.gisia.notificacao.infrastructure.exceptions.EmailException;
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 @Service
@@ -24,7 +27,7 @@ public class EmailService {
     public String remetente;
 
     @Value("${envio.email.nomeRemetente}")
-    private final String nomeRemetente;
+    private String nomeRemetente;
 
 
     public void enviaEmail(TarefasDTO dto) {
@@ -39,9 +42,16 @@ public class EmailService {
             mimeMessageHelper.setSubject("Notificação de Tarefa");
 
             Context context = new Context();
+            context.setVariable("nomeTarefa", dto.getNomeTarefa());
+            context.setVariable("dataEvento", dto.getDataEvento());
+            context.setVariable("descrição", dto.getDescricao());
+            String template = templateEngine.process("notificacao", context);
+            mimeMessageHelper.setText(template, true);
+            javaMailSender.send(mensagem);
 
 
+        }catch (MessagingException | UnsupportedEncodingException e) {
+            throw new EmailException("Erro ao enviar o email", e.getCause());
         }
-
     }
 }
